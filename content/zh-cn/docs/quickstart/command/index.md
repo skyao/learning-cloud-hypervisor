@@ -1,0 +1,224 @@
+---
+title: "命令"
+linkTitle: "命令"
+weight: 40
+date: 2025-11-15
+description: >
+  cloud hypervisor 命令
+---
+
+参考:
+
+https://www.cloudhypervisor.org/docs/prologue/commands/
+
+
+## cloud-hypervisor
+
+通过 help 命令可以得到参数和参数说明:
+
+```bash
+cloud-hypervisor --help
+```
+
+
+
+- `--api-socket <api-socket>`
+
+   HTTP API socket (UNIX domain socket): path=`</path/to/a/file> or fd=<fd>`
+
+- -`-balloon <balloon>`
+
+   Balloon parameters
+
+   "size=<balloon_size>,deflate_on_oom=on|off"
+
+- `--cmdline <cmdline>`
+
+  Kernel command line
+
+- `--console <console>`
+
+  Control (virtio) console: "off\|null\|pty\|tty\|file=</path/to/a/file>,iommu=on\|off"
+
+  [default: tty]
+
+- `--cpus <cpus>`
+
+  `boot=<boot_vcpus>,max=<max_vcpus>,topology=<threads_per_core>:<cores_per_die>:<dies_per_package>:<packages>,kvm_hyperv=on`
+
+  [default: boot=1,max_phys_bits=46]
+
+- `--debug-console <debug-console>`
+
+  off\|pty\|tty\|file=</path/to/a/file>,iobase=`<port in hex>`
+
+  [default:off,iobase=0xe9]
+
+- `--device <device>...`
+
+   Direct device assignment parameters
+
+   "path=<device_path>,iommu=on\|off,id=<device_id>,pci_segment=<segment_id>"
+
+- `--disk <disk>...`
+
+   Disk parameters
+
+   "path=<disk_image_path>,readonly=on\|off,direct=on\|off,iommu=on\|off,num_queues=<number_of_queues>,queue_size=<size_of_each_queue>,vhost_user=on\|off,socket=<vhost_user_socket_path>,bw_size=<bytes>,bw_one_time_burst=<bytes>,bw_refill_time=<ms>,ops_size=<io_ops>,ops_one_time_burst=<io_ops>,ops_refill_time=<ms>,id=<device_id>,pci_segment=<segment_id>,rate_limit_group=<group_id>,queue_affinity=<list_of_queue_indices_with_their_associated_cpuset>,serial=<serial_number>"
+
+- `--event-monitor <event-monitor>`
+
+  File to report events on: `path=</path/to/a/file> or fd=<fd>`
+
+- `--firmware <firmware>`
+
+  File to report events on: `path=</path/to/a/file> or fd=<fd>`
+
+- `--fs <fs>...`
+
+  virtio-fs parameters
+  "tag=<tag_name>,socket=<socket_path>,num_queues=<number_of_queues>,queue_size=<size_of_each_queue>,id=<device_id>,pci_segment=<segment_id>"
+
+- `--initramfs <initramfs>`
+
+  Path to initramfs image
+
+- `--kernel <kernel>`
+
+  Path to kernel to load. This may be a kernel or firmware that supports a PVH entry point (e.g. vmlinux) or architecture equivalent
+
+- `--landlock`
+
+  enable/disable Landlock.
+
+- `--landlock-rules <landlock-rules>...`
+
+  Landlock parameters "path=<path/to/{file/dir}>,access=[rw]"
+
+- `--log-file <log-file>`
+
+  Log file. Standard error is used if not specified
+
+- `--memory <memory>`
+
+   "size=<guest_memory_size>,mergeable=on|off,shared=on|off,hugepages=on|off,hugepage_size=<hugepage_size>,hotplug_method=acpi|virtio-mem,hotplug_size=<hotpluggable_memory_size>,hotplugged_size=<hotplugged_memory_size>,prefault=on|off,thp=on|off"
+
+  [default: size=512M]
+
+- `--memory-zone <memory-zone>...`
+
+   User defined memory zone parameters
+
+   "size=<guest_memory_region_size>, file=<backing_file>, shared=on|off, hugepages=on|off, hugepage_size=<hugepage_size>, host_numa_node=<node_id>, id=<zone_identifier>, hotplug_size=<hotpluggable_memory_size>, hotplugged_size=<hotplugged_memory_size>, prefault=on|off"
+
+- `--net <net>...`
+
+  Network parameters
+
+  "tap=<if_name>,ip=<ip_addr>,mask=<net_mask>,mac=<mac_addr>,fd=<fd1,fd2...>,iommu=on|off,num_queues=<number_of_queues>,queue_size=<size_of_each_queue>,id=<device_id>, vhost_user=<vhost_user_enable>, socket=<vhost_user_socket_path>, vhost_mode=client|server, bw_size=<bytes>,bw_one_time_burst=<bytes>, bw_refill_time=<ms>, ops_size=<io_ops>, ops_one_time_burst=<io_ops>, ops_refill_time=<ms>, pci_segment=<segment_id>offload_tso=on|off, offload_ufo=on|off, offload_csum=on|off"
+
+- `--numa <numa>...`
+
+  Settings related to a given NUMA node
+
+  "guest_numa_id=<node_id>, cpus=<cpus_id>, distances=<list_of_distances_to_destination_nodes>, memory_zones=<list_of_memory_zones>, pci_segments=<list_of_pci_segments>"
+
+- `--pci-segment <pci-segment>...`
+
+  PCI Segment parameters
+
+  "pci_segment=<segment_id>, mmio32_aperture_weight=<scale>, mmio64_aperture_weight=<scale>"
+
+- `--platform <platform>`
+
+  `num_pci_segments=<num_pci_segments>, iommu_segments=<list_of_segments>, iommu_address_width=<bits>, serial_number=<dmi_device_serial_number>, uuid=<dmi_device_uuid>, oem_strings=<list_of_strings>`
+
+- `--pmem <pmem>...`
+
+  Persistent memory parameters
+
+  "file=<backing_file_path>,size=<persistent_memory_size>,iommu=on|off,discard_writes=on|off,id=<device_id>,pci_segment=<segment_id>"
+
+- `--pvpanic`
+
+  Enable pvpanic device
+
+- `--rate-limit-group <rate-limit-group>...`
+
+  Rate Limit Group parameters
+
+  `"bw_size=<bytes>, bw_one_time_burst=<bytes>, bw_refill_time=<ms>, ops_size=<io_ops>, ops_one_time_burst=<io_ops>, ops_refill_time=<ms>, id=<device_id>"`
+
+- `--restore <restore>`
+
+  Restore from a VM snapshot. 
+
+  Restore parameters
+
+  `"source_url=<source_url>, prefault=on|off, net_fds=<list_of_net_ids_with_their_associated_fds>"`
+
+  `source_url` should be a valid URL (e.g file:///foo/bar or tcp://192.168.1.10/foo) 
+
+  `prefault` brings memory pages in when enabled (disabled by default) 
+
+  `net_fds` is a list of net ids with new file descriptors. Only net devices backed by FDs directly are needed as input.
+
+- `--rng <rng>`
+
+  Random number generator parameters "src=<entropy_source_path>,iommu=on|off" 
+
+  [default: src=/dev/urandom]
+
+- `--seccomp <seccomp>`
+
+  [default: true] [possible values: true, false, log]
+
+- `--serial <serial>`
+
+  Control serial port: `off|null|pty|tty|file=</path/to/a/file>|socket=</path/to/a/file>`
+
+  [default: null]
+
+- `--tpm <tpm>`
+
+  TPM device "(UNIX Domain Socket from swtpm) socket=`</path/to/a/socket>`"
+
+- `--user-device <user-device>...`
+
+  Userspace device socket=`<socket_path>,id=<device_id>,pci_segment=<segment_id>`
+
+- `-v...`
+
+  Sets the level of debugging output
+
+- `--vdpa <vdpa>...`
+
+  vDPA device
+
+  "path=<device_path>,num_queues=<number_of_queues>,iommu=on|off,id=<device_id>,pci_segment=<segment_id>"
+
+- `-V, --version`
+
+  Print version
+
+- `--vsock <vsock>`
+
+  Virtio VSOCK parameters
+
+  "cid=<context_id>, socket=<socket_path>, iommu=on|off, id=<device_id>, pci_segment=<segment_id>"
+
+- `--watchdog`
+
+  Enable virtio-watchdog
+
+- `-h, --help`
+
+  Print help
+
+
+​    
+
+## chi-remote
+
+
+

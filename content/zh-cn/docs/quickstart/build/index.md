@@ -59,30 +59,30 @@ sudo setcap cap_net_admin+ep ./target/release/cloud-hypervisor
 ```bash
 $ ./target/release/cloud-hypervisor --version
 
-cloud-hypervisor v48.0-51-g68f9e8244
+cloud-hypervisor v48.0-51-g68f9e8244-dirty
 ```
 
-文件大小 3.9M. 真不大:
+文件大小 3.8M. 真不大:
 
 ```bash
-ls -lh ./target/release/cloud-hypervisor   
--rwxrwxr-x 2 sky sky 3.9M Oct 16 11:17 ./target/release/cloud-hypervisor
+ls -lh ./target/release/cloud-hypervisor 
+-rwxrwxr-x 2 sky sky 3.8M Nov 18 15:16 ./target/release/cloud-hypervisor
 ```
 
-安全起见,不用 master 分支构建,改用最新的 release tag,然后采用静态链接:
+安全起见,不用 main 分支构建,改用最新的 release tag,然后采用静态链接:
 
 ```bash
 rm -rf target
 
-git checkout v48.0
+git checkout v49.0
 cargo build --release --target=x86_64-unknown-linux-musl --all
 sudo setcap cap_net_admin+ep ./target/x86_64-unknown-linux-musl/release/cloud-hypervisor
 
 ./target/x86_64-unknown-linux-musl/release/cloud-hypervisor --version
-cloud-hypervisor v48.0
+cloud-hypervisor v49.0
 
 ls -lh ./target/x86_64-unknown-linux-musl/release/cloud-hypervisor 
--rwxrwxr-x 2 sky sky 4.0M Oct 16 15:31 ./target/x86_64-unknown-linux-musl/release/cloud-hypervisor
+-rwxrwxr-x 2 sky sky 4.0M Nov 18 15:23 ./target/x86_64-unknown-linux-musl/release/cloud-hypervisor
 ```
 
 静态链接也才4M,没大多少.

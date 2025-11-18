@@ -19,7 +19,6 @@ Cloud Hypervisor 支持直接内核启动（x86-64内核需使用支持PVH构建
 
 固件的选择取决于您的客户操作系统选项，可能需要进行一些实验性测试。
 
-
 ## 固件启动
 
 Cloud Hypervisor 支持引导包含运行云工作负载所需全部组件的磁盘镜像，即云镜像。
@@ -70,7 +69,7 @@ cd ~/work/code/cloud-hypervisor/
 
 git clone https://github.com/cloud-hypervisor/cloud-hypervisor.git
 cd cloud-hypervisor
-git checkout v48.0
+git checkout v49.0
 ```
 
 执行:
@@ -97,16 +96,42 @@ $ ls -lh /tmp/ubuntu-cloudinit.img
 -rw-rw-r-- 1 sky sky 8.0M Oct 16 17:12 /tmp/ubuntu-cloudinit.img
 ```
 
+注意这个目录是 `/tmp`,重启之后文件很可能就不在了,方便起见, 还是复制到
+
+```bash
+mkdir -p ~/work/soft/cloudhypervisor/images
+mv /tmp/ubuntu-cloudinit.img /home/sky/work/soft/cloudhypervisor/images
+```
+
 ### 启动
+
+注意: 从 v49 版本开始需要设置 cloud-hypervisor 二进制的特权, 执行命令:
+
+```bash
+sudo setcap cap_net_admin+ep /home/sky/work/code/cloud-hypervisor/cloud-hypervisor/target/x86_64-unknown-linux-musl/release/cloud-hypervisor
+```
+
+否则后面启动时会报错:
+
+```bash
+cloud-hypervisor:   0.016376s: <main> ERROR:/home/sky/work/code/cloud-hypervisor/cloud-hypervisor/src/lib.rs:23 -- Fatal error: VmBoot(VmBoot(DeviceManager(CreateVirtioNet(OpenTap(TapOpen(ConfigureTap(Os { code: 1, kind: PermissionDenied, message: "Operation not permitted" })))))))
+Error: Cloud Hypervisor exited with the following chain of errors:
+  0: Error booting VM
+  1: The VM could not boot
+  2: Error from device manager
+  3: Cannot create virtio-net device
+  4: Failed to open taps
+  5: Open tap device failed
+  6: Unable to configure tap interface
+  7: Operation not permitted (os error 1)
+```
 
 注意启动命令中的路径要用绝对路径,不能用 '~/' 之类,否则会报错无法找到文件.
 
 ```bash
-cd ~/work/code/cloud-hypervisor/cloud-hypervisor/
-
-./target/x86_64-unknown-linux-musl/release/cloud-hypervisor \
+/home/sky/work/code/cloud-hypervisor/cloud-hypervisor/target/x86_64-unknown-linux-musl/release/cloud-hypervisor \
 	--kernel /home/sky/work/soft/cloudhypervisor/fireware/hypervisor-fw \
-	--disk path=/home/sky/work/soft/cloudhypervisor/fireware/focal-server-cloudimg-amd64.raw path=/tmp/ubuntu-cloudinit.img \
+	--disk path=/home/sky/work/soft/cloudhypervisor/fireware/focal-server-cloudimg-amd64.raw path=/home/sky/work/soft/cloudhypervisor/images/ubuntu-cloudinit.img \
 	--cpus boot=4 \
 	--memory size=1024M \
 	--net "tap=,mac=,ip=,mask="
@@ -134,7 +159,7 @@ cloud login:
 首先要在主机上创建并配置 TAP 接口:
 
 ```bash
-sudo ip tuntap add name vm-tap0 mode tap user $(whoami) multi_queue
+sudo ip tuntap add name vm-tap0 mode tap user $(whoami) 
 sudo ip link set vm-tap0 up
 sudo ip addr add 192.168.1.127/24 dev vm-tap0
 ```
@@ -145,13 +170,15 @@ sudo ip addr add 192.168.1.127/24 dev vm-tap0
 $ ip addr
 ......
 
-7: vm-tap0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc fq_codel state DOWN group default qlen 1000
+10: vm-tap0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc fq_codel state DOWN group default qlen 1000
     link/ether 3e:7b:2e:ca:9a:3e brd ff:ff:ff:ff:ff:ff
     inet 192.168.1.127/24 scope global vm-tap0
        valid_lft forever preferred_lft forever
 ```
 
 注意：上面的 ip 命令在重启后会失效。若需持久化配置，可将其写入主机的网络配置文件（如 /etc/network/interfaces 或使用 systemd-networkd/NetworkManager)。
+
+注意2: 如果配置有问题,可以先删除,再重新配置. `sudo ip link delete vm-tap0`
 
 
 ```bash
@@ -161,4 +188,76 @@ $ ip addr
 	--cpus boot=4 \
 	--memory size=1024M \
 	--net "tap=vm-tap0,mac=12:34:56:78:90:22,ip=192.168.1.129,mask=255.255.255.0"
+
+
+/home/sky/work/code/cloud-hypervisor/cloud-hypervisor/target/x86_64-unknown-linux-musl/release/cloud-hypervisor \
+	--kernel /home/sky/work/soft/cloudhypervisor/fireware/hypervisor-fw \
+	--disk path=/home/sky/work/soft/cloudhypervisor/fireware/focal-server-cloudimg-amd64.raw path=/home/sky/work/soft/cloudhypervisor/images/ubuntu-cloudinit.img \
+	--cpus boot=4 \
+	--memory size=1024M \
+	--net "tap=tap0,mac=12:34:56:78:90:22,ip=192.168.1.10,mask=255.255.255.0"
+```
+
+## 镜像启动
+
+Cloud Hypervisor 也支持直接内核启动。对于 x86-64 架构，需要一个 vmlinux ELF 内核（编译时包含 PVH 支持）。为了支持开发，有一个自定义分支；不过只要所需选项已启用，任何近期的内核都可以使用。
+
+### 构建 linux 内核
+
+要构建内核：
+
+```bash
+cd ~/work/code/cloud-hypervisor/
+
+git clone --depth 1 https://github.com/cloud-hypervisor/linux.git -b ch-6.12.8 linux-cloud-hypervisor
+cd linux-cloud-hypervisor
+make ch_defconfig
+
+sudo apt-get install libelf-dev
+```
+
+注意要执行 `sudo apt-get install libelf-dev` 命令安装 libelf,否则会报错:
+
+```bash
+<stdin>:1:10: fatal error: libelf.h: No such file or directory
+```
+
+构建 x86-64 kernel: 
+
+```bash
+KCFLAGS="-Wa,-mx86-used-note=no" make bzImage -j `nproc`
+```
+
+构建完成后,linux 内核保存在 `./arch/x86/boot/compressed/vmlinux.bin`,大小为 45M:
+
+```bash
+$ ls -lh ./arch/x86/boot/compressed/vmlinux.bin
+-rwxrwxr-x 1 sky sky 45M Nov 18 15:50 ./arch/x86/boot/compressed/vmlinux.bin
+```
+
+rootfs 磁盘镜像可以用之前下载的 ubuntu 镜像, 之前存放在目录 `~/work/soft/cloudhypervisor/fireware` 下
+
+也可以再次下载和转换:
+
+```bash
+cd ~/work/soft/cloudhypervisor/fireware
+
+wget https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img # x86-64
+wget https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-arm64.img # AArch64
+qemu-img convert -p -f qcow2 -O raw focal-server-cloudimg-amd64.img focal-server-cloudimg-amd64.raw # x86-64
+qemu-img convert -p -f qcow2 -O raw focal-server-cloudimg-arm64.img focal-server-cloudimg-arm64.raw # AArch64
+```
+
+启动 vm:
+
+```bash
+/home/sky/work/code/cloud-hypervisor/cloud-hypervisor/target/x86_64-unknown-linux-musl/release/cloud-hypervisor \
+	--kernel /home/sky/work/code/cloud-hypervisor/linux-cloud-hypervisor/arch/x86/boot/compressed/vmlinux.bin \
+	--console off \
+	--serial tty \
+	--disk path=/home/sky/work/soft/cloudhypervisor/fireware/focal-server-cloudimg-amd64.raw \
+	--cmdline "console=ttyS0 root=/dev/vda1 rw" \
+	--cpus boot=4 \
+	--memory size=1024M \
+	--net "tap=,mac=,ip=,mask="
 ```
