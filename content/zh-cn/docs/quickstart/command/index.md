@@ -218,7 +218,58 @@ cloud-hypervisor --help
 
 ​    
 
-## chi-remote
+## ch-remote
+
+通过 help 命令可以得到参数和参数说明:
+
+```bash
+ch-remote --help
+```
+
+
+
+| 命令              | 命令描述                                                  |
+| ----------------- | --------------------------------------------------------- |
+| add-device        | Add VFIO device                                           |
+| add-disk          | Add block device                                          |
+| add-fs            | Add virtio-fs backed fs device                            |
+| add-net           | Add network device                                        |
+| add-pmem          | Add persistent memory device                              |
+| add-user-device   | Add userspace device                                      |
+| add-vdpa          | Add vDPA device                                           |
+| add-vsock         | Add vsock device                                          |
+| boot              | Boot a created VM                                         |
+| coredump          | Create a coredump from VM                                 |
+| counters          | Counters from the VM                                      |
+| create            | Create VM from a JSON configuration                       |
+| delete            | Delete a VM                                               |
+| info              | Info on the VM                                            |
+| nmi               | Trigger NMI                                               |
+| pause             | Pause the VM                                              |
+| ping              | Ping the VMM to check for API server availability         |
+| power-button      | Trigger a power button in the VM                          |
+| reboot            | Reboot the VM                                             |
+| receive-migration | Receive a VM migration                                    |
+| remove-device     | Remove VFIO and PCI device                                |
+| resize            | Resize the VM                                             |
+| resize-zone       | Resize a memory zone                                      |
+| restore           | Restore VM from a snapshot                                |
+| resume            | Resume the VM                                             |
+| send-migration    | Initiate a VM migration                                   |
+| shutdown          | Shutdown the VM                                           |
+| shutdown-vmm      | Shutdown the VMM                                          |
+| snapshot          | Create a snapshot from VM                                 |
+| help              | Print this message or the help of the given subcommand(s) |
+
+
+
+命令行选项: 
+
+| 选项                        | 选项描述                                  |
+| --------------------------- | ----------------------------------------- |
+| `--api-socket <api-socket>` | HTTP API socket path (UNIX domain socket) |
+| -h, --help                  | Print help                                |
+| -V, --version               | Print version                             |
 
 
 
