@@ -15,8 +15,8 @@ description: >
 
 机器信息:
 
-- 操作系统: linux mint 22
-- 内核: 6.8
+- 操作系统: debian13
+- 内核: 6.12
 
 准备工作:
 
@@ -49,37 +49,18 @@ cd ~/work/code/cloud-hypervisor
 
 git clone https://github.com/cloud-hypervisor/cloud-hypervisor.git
 cd cloud-hypervisor
-
-cargo build --release
-sudo setcap cap_net_admin+ep ./target/release/cloud-hypervisor
-```
-
-此时构建好的 cloud-hypervisor 二进制文件在 ./target/release/ 目录下,可以执行命令看一下版本:
-
-```bash
-$ ./target/release/cloud-hypervisor --version
-
-cloud-hypervisor v48.0-51-g68f9e8244-dirty
-```
-
-文件大小 3.8M. 真不大:
-
-```bash
-ls -lh ./target/release/cloud-hypervisor 
--rwxrwxr-x 2 sky sky 3.8M Nov 18 15:16 ./target/release/cloud-hypervisor
-```
-
-安全起见,不用 main 分支构建,改用最新的 release tag,然后采用静态链接:
-
-```bash
-rm -rf target
-
-git checkout v49.0
+# 最新的 release tag
+git checkout v50.0
+# 采用静态链接
 cargo build --release --target=x86_64-unknown-linux-musl --all
 sudo setcap cap_net_admin+ep ./target/x86_64-unknown-linux-musl/release/cloud-hypervisor
+```
 
+检查构建之后的版本：
+
+```bash
 ./target/x86_64-unknown-linux-musl/release/cloud-hypervisor --version
-cloud-hypervisor v49.0
+cloud-hypervisor v50.0
 
 ls -lh ./target/x86_64-unknown-linux-musl/release/cloud-hypervisor 
 -rwxrwxr-x 2 sky sky 4.0M Nov 18 15:23 ./target/x86_64-unknown-linux-musl/release/cloud-hypervisor

@@ -25,10 +25,12 @@ Cloud Hypervisor 支持引导包含运行云工作负载所需全部组件的磁
 
 ### 准备工作
 
-首先安装 qemu-utils,稍后要用到其中的 qemu-img :
+首先安装 qemu-utils,稍后要用到其中的 qemu-img 和 mkdosfs :
 
 ```bash
 sudo apt install qemu-utils
+sudo apt install dosfstools
+sudo apt install mtools
 ```
 
 以下示例命令将下载Ubuntu云镜像，将其转换为 Cloud Hypervisor 可用的格式，并生成引导该镜像所需的固件。
@@ -69,7 +71,7 @@ cd ~/work/code/cloud-hypervisor/
 
 git clone https://github.com/cloud-hypervisor/cloud-hypervisor.git
 cd cloud-hypervisor
-git checkout v49.0
+git checkout v50.0
 ```
 
 执行:
@@ -213,10 +215,11 @@ git clone --depth 1 https://github.com/cloud-hypervisor/linux.git -b ch-6.12.8 l
 cd linux-cloud-hypervisor
 make ch_defconfig
 
-sudo apt-get install libelf-dev
+sudo apt install libelf-dev
+sudo apt install bc
 ```
 
-注意要执行 `sudo apt-get install libelf-dev` 命令安装 libelf,否则会报错:
+注意要执行 `sudo apt install libelf-dev` 命令安装 libelf,否则会报错:
 
 ```bash
 <stdin>:1:10: fatal error: libelf.h: No such file or directory
