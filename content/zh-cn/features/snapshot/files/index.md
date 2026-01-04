@@ -259,6 +259,72 @@ state.json 文件大小约为 42 KB。
 
 ## memory-ranges
 
+以 4g 内存规格的快照文件为例：
 
+```bash
+$ ls -lh
+total 4.1G
+-rw------- 1 root root 1.4K Dec 30 19:13 config.json
+-rw------- 1 root root 4.0G Dec 30 19:13 memory-ranges
+-rw------- 1 root root  35K Dec 30 19:13 state.json
+```
 
+可以使用支持稀疏文件的 tar -S 命令来将这个稀疏文件打包并使用 zstd 压缩：
 
+```bash
+sudo tar -cvSf snapshot.tar.zstd -I 'zstd -T0' config.json memory-ranges state.json
+```
+
+打包出来的 snapshot.tar.zstd 文件只有区区 67M，非常的小：
+
+```bash
+ls -lh
+total 4.1G
+-rw------- 1 root root 1.4K Dec 30 19:13 config.json
+-rw------- 1 root root 4.0G Dec 30 19:13 memory-ranges
+-rw-rw-r-- 1 sky  sky   67M Jan  4 15:39 snapshot.tar.zstd
+-rw------- 1 root root  35K Dec 30 19:13 state.json
+```
+
+复制这个文件到其他目录，然后以支持稀疏文件的 tar 命令进行解压缩：
+
+```bash
+mkdir snapshot-4g-distributed
+cd snapshot-4g-distributed
+cp ../snapshot-4g/snapshot.tar.zstd .
+
+sudo tar -xvSf snapshot.tar.zstd -I 'zstd -d'
+```
+
+解压缩之后的目录文件为：
+
+```bash
+ls -lh 
+total 4.1G
+-rw------- 1 root root 1.4K Dec 30 19:13 config.json
+-rw------- 1 root root 4.0G Dec 30 19:13 memory-ranges
+-rw-rw-r-- 1 sky  sky   67M Jan  4 15:44 snapshot.tar.zstd
+-rw------- 1 root root  35K Dec 30 19:13 state.json
+```
+
+memory-ranges 文件解压缩之后恢复到 4.0G 的表面大小。为了验证这个 memory-ranges 文件依然是稀疏文件，我们再次用 tar 命令进行打包压缩测试：
+
+```bash
+sudo tar -cvSf snapshot2.tar.zstd -I 'zstd -T0' config.json memory-ranges state.json
+```
+
+重新打包的 snapshot2.tar.zstd 文件依然是 67M，验证前面对稀疏文件的打包/传输/解包过程都是支持稀疏文件的。
+
+```bash
+ls -lh                                                                              
+total 4.2G
+-rw------- 1 root root 1.4K Dec 30 19:13 config.json
+-rw------- 1 root root 4.0G Dec 30 19:13 memory-ranges
+-rw-r--r-- 1 root root  67M Jan  4 15:48 snapshot2.tar.zstd
+-rw-rw-r-- 1 sky  sky   67M Jan  4 15:44 snapshot.tar.zstd
+-rw------- 1 root root  35K Dec 30 19:13 state.json
+```
+
+因此，对于快照文件的存储和传输，使用支持稀疏文件的打包压缩方式是必须的，可以极大的减少存储和网络传输的流量压力，以及下载快照文件带来的延迟。
+
+重复这个测试，对其他内存规格的快照文件进行打包和压缩：
