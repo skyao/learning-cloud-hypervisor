@@ -203,6 +203,20 @@ sudo /usr/local/bin/cloud-hypervisor \
     --cmdline "console=hvc0 root=/dev/pmem0 ro rootfstype=erofs init=/etc/init.d/rcS"
 ```
 
+然后可以用帐号 root/root 登录（帐号密码在前面的脚本中有设置，可修改）。关机时注意 alphine Linux 默认不带 shutdown 命令，关机要用 poweroff 命令， 重启可以用普通的 reboot 命令。 
+
+如果想增加 shutdown 命令，可以：
+
+```bash
+apk update
+apk add sysvinit
+# 之后就能用 shutdown
+shutdown -h now
+shutdown -r now
+```
+
+先用 poweroff ，不额外安装了。
+
 ### 进程分析
 
 这是启动单个 microvm 的进程信息：
@@ -340,6 +354,19 @@ Address           Kbytes     RSS   Dirty Mode  Mapping
 00007ffe2b7bf000     132      60      60 rw---   [ stack ]
 ---------------- ------- ------- ------- 
 total kB         1078736   82920   76464
+```
+
+## 启动脚本优化
+
+```bash
+/usr/local/bin/cloud-hypervisor \
+    --kernel ./vmlinux \
+    --memory size=1024M,shared=on \
+    --pmem file=./alpine_rootfs.erofs \
+    --disk path=./microvm-1/write_layer.img \
+    --cpus boot=1 \
+    --console tty \
+    --cmdline "console=hvc0 root=/dev/pmem0 ro rootfstype=erofs init=/etc/init.d/rcS quiet mitigations=off lpj=9676800 raid=noautodetect"
 ```
 
 ## 参考资料

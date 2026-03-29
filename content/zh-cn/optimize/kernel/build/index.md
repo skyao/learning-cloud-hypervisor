@@ -931,3 +931,145 @@ chmod +x build_agent_kernel.sh
 ```bash
 -rwxrwxr-x 1 sky sky 25M Feb 28 09:43 vmlinux
 ```
+
+### 构建脚本改进
+
+根据启动时的 dmesg 信息进行优化改进:
+
+```bash
+vi build_agent_kernel2.sh
+```
+
+内容为:
+
+```bash
+#!/bin/bash
+set -e
+
+echo "开始构建 agent 专属内核 (EROFS + DAX + Ext4 Writable)..."
+
+# 1. 初始化配置
+make clean
+make ch_defconfig
+
+# 2. 核心架构与编译器优化
+./scripts/config --enable CC_OPTIMIZE_FOR_SIZE
+./scripts/config --set-val LOG_BUF_SHIFT 14
+./scripts/config --set-val LOG_CPU_MAX_BUF_SHIFT 0
+./scripts/config --disable PRINTK_INDEX
+./scripts/config --disable X86_5LEVEL
+./scripts/config --enable RETPOLINE
+./scripts/config --disable AMD_MEM_ENCRYPT
+./scripts/config --disable UTS_NS
+
+# 3. 剥离大型子系统
+./scripts/config --disable DRM
+./scripts/config --disable SOUND
+./scripts/config --disable ETHERNET
+./scripts/config --disable HID
+./scripts/config --disable INPUT
+./scripts/config --disable KVM
+./scripts/config --disable KVM_INTEL
+./scripts/config --disable KVM_AMD
+./scripts/config --disable PERF_EVENTS
+./scripts/config --disable PROFILING
+./scripts/config --disable BPF_SYSCALL
+./scripts/config --disable AUDIT
+
+# 4. 文件系统基础裁剪 (先关掉不需要的)
+./scripts/config --disable DEBUG_FS
+./scripts/config --disable BLK_DEBUG_FS
+./scripts/config --disable STACKTRACE
+./scripts/config --disable KALLSYMS_ALL
+./scripts/config --disable FS_ENCRYPTION
+./scripts/config --disable FS_ENCRYPTION_ALGS
+./scripts/config --disable FS_VERITY
+./scripts/config --disable AUTOFS_FS
+./scripts/config --disable EFIVAR_FS
+./scripts/config --disable CONFIGFS_FS
+./scripts/config --disable FSNOTIFY
+./scripts/config --disable QUOTA
+./scripts/config --disable FUSE_FS
+./scripts/config --disable VIRTIO_FS
+
+# 批量关闭不常用文件系统
+for fs in XFS_FS BTRFS_FS F2FS_FS JFS_FS REISERFS_FS NTFS_FS NTFS3_FS CIFS SMB_SERVER \
+          NFS_FS GFS2_FS OCFS2_FS MINIX_FS HFS_FS HFSPLUS_FS ISO9660_FS UDF_FS \
+          FAT_FS VFAT_FS MSDOS_FS SQUASHFS JOLIET ZISOFS; do
+    ./scripts/config --disable $fs
+done
+
+# 5. 加密与压缩算法裁剪
+./scripts/config --disable CRYPTO_TWOFISH
+./scripts/config --disable CRYPTO_TWOFISH_COMMON
+./scripts/config --disable CRYPTO_TWOFISH_X86_64
+./scripts/config --disable CRYPTO_TWOFISH_X86_64_3WAY
+./scripts/config --disable CRYPTO_TWOFISH_AVX_X86_64
+./scripts/config --disable CRYPTO_AES_NI_INTEL
+./scripts/config --disable CRYPTO_MANAGER
+./scripts/config --disable ZSTD_COMPRESS
+./scripts/config --disable ZSTD_DECOMPRESS
+./scripts/config --disable RD_ZSTD
+
+# 6. NLS 保持 (UTF-8 + 中文支持)
+grep "CONFIG_NLS_" .config | grep "=y" | cut -d'=' -f1 | while read line; do
+    ./scripts/config --disable "$line"
+done
+./scripts/config --enable CONFIG_NLS
+./scripts/config --enable CONFIG_NLS_UTF8
+./scripts/config --enable CONFIG_NLS_ASCII
+./scripts/config --enable CONFIG_NLS_ISO8859_1
+./scripts/config --enable CONFIG_NLS_CODEPAGE_936 
+./scripts/config --set-str CONFIG_NLS_DEFAULT "utf8"
+./scripts/config --enable CONFIG_NLS_UCS2_UTILS
+
+# 7. 开启 DAX 与内存管理 (EROFS DAX 必备)
+./scripts/config --enable FS_DAX
+./scripts/config --enable FS_DAX_PMD
+./scripts/config --enable DAX
+./scripts/config --enable ZONE_DEVICE
+./scripts/config --enable MEMORY_HOTPLUG
+./scripts/config --enable MEMORY_HOTREMOVE
+
+# 8. 开启设备驱动 (virtio-pmem 用于 Rootfs, virtio-blk 用于写层)
+./scripts/config --enable VIRTIO_PMEM
+./scripts/config --enable LIBNVDIMM
+./scripts/config --enable BLK_DEV_PMEM
+./scripts/config --enable VIRTIO_BLK
+
+# 9. 开启 EROFS (只读 Rootfs 格式)
+./scripts/config --enable EROFS_FS
+./scripts/config --enable EROFS_FS_XATTR
+./scripts/config --enable EROFS_FS_POSIX_ACL
+./scripts/config --enable EROFS_FS_ZIP
+
+# 10. 开启 OverlayFS
+./scripts/config --enable OVERLAY_FS
+
+# 11. 优化 Ext4 (写层专用)
+./scripts/config --enable EXT4_FS
+./scripts/config --disable EXT4_FS_POSIX_ACL
+./scripts/config --disable EXT4_FS_SECURITY
+./scripts/config --disable EXT4_DEBUG
+./scripts/config --disable EXT4_KUNIT_TESTS
+
+# 12. 应用配置并编译
+make olddefconfig
+
+
+if ! grep -q "CONFIG_EROFS_FS=y" .config; then
+    echo "❌ 严重错误: 依赖冲突导致 EROFS 无法内置！"
+    echo "当前冲突点可能在: $(grep -E "CONFIG_EROFS_FS|DAX|NETFS" .config)"
+    exit 1
+fi
+
+make -j$(nproc) vmlinux
+
+# 13. 成果展示
+echo "------------------------------------------"
+ls -lh vmlinux
+echo "Top 10 Functions by Size:"
+nm --size-sort -r vmlinux | head -n 10
+echo "------------------------------------------"
+echo "agent 专属内核构建完成！"
+```
